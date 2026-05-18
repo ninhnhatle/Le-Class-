@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { WHEEL_SLICE_COLORS } from "./constants";
+import { assignSliceColors } from "./constants";
 
 type SpinWheelProps = {
   options: string[];
@@ -13,11 +13,11 @@ const MIN_FULL_SPINS = 5;
 /** Pointer fixed at 3 o'clock (CSS conic: 0° = 12h, clockwise). */
 const POINTER_DEG = 90;
 
-function buildConicGradient(count: number): string {
+function buildConicGradient(colors: string[]): string {
+  const count = colors.length;
   if (count === 0) return "conic-gradient(#e2e8f0 0deg 360deg)";
   const step = 360 / count;
-  const stops = Array.from({ length: count }, (_, i) => {
-    const color = WHEEL_SLICE_COLORS[i % WHEEL_SLICE_COLORS.length];
+  const stops = colors.map((color, i) => {
     const start = i * step;
     const end = (i + 1) * step;
     return `${color} ${start}deg ${end}deg`;
@@ -25,15 +25,18 @@ function buildConicGradient(count: number): string {
   return `conic-gradient(${stops.join(", ")})`;
 }
 
-/** Label at mid-radius; text orientation matches 3 o'clock (radial, rotation 0° at 90°). */
-function getLabelPlacement(midAngleDeg: number) {
+const LABEL_RADIUS_PCT = 28;
+
+/** Label centered in slice band (between hub and rim); 3 o'clock = 0° rotation. */
+function getLabelPlacement(midAngleDeg: number, segmentAngleDeg: number) {
   const a = ((midAngleDeg % 360) + 360) % 360;
   const rad = ((a - 90) * Math.PI) / 180;
-  const radiusPct = 36;
-  const x = 50 + radiusPct * Math.cos(rad);
-  const y = 50 + radiusPct * Math.sin(rad);
+  const x = 50 + LABEL_RADIUS_PCT * Math.cos(rad);
+  const y = 50 + LABEL_RADIUS_PCT * Math.sin(rad);
   const labelRotation = a - POINTER_DEG;
-  return { x, y, labelRotation };
+  const arcChordPct = 2 * LABEL_RADIUS_PCT * Math.sin((segmentAngleDeg * Math.PI) / 360);
+  const maxWidthPct = Math.min(32, Math.max(16, arcChordPct * 0.85));
+  return { x, y, labelRotation, maxWidthPct };
 }
 
 function computeTargetRotation(index: number, count: number, currentRotation: number): number {
@@ -52,7 +55,12 @@ export function SpinWheel({ options, className = "" }: SpinWheelProps) {
   const [result, setResult] = useState<string | null>(null);
 
   const validOptions = useMemo(() => options.map((o) => o.trim()).filter(Boolean), [options]);
-  const gradient = useMemo(() => buildConicGradient(validOptions.length), [validOptions.length]);
+  const optionsKey = validOptions.join("\n");
+  const sliceColors = useMemo(
+    () => assignSliceColors(validOptions.length),
+    [validOptions.length, optionsKey],
+  );
+  const gradient = useMemo(() => buildConicGradient(sliceColors), [sliceColors]);
   const segmentAngle = validOptions.length > 0 ? 360 / validOptions.length : 0;
 
   const spin = useCallback(() => {
@@ -82,7 +90,7 @@ export function SpinWheel({ options, className = "" }: SpinWheelProps) {
   return (
     <div className={`flex flex-col items-center gap-6 ${className}`}>
       <div className="relative px-2">
-        <div className="relative size-96 sm:size-[28rem]">
+        <div className="relative size-[min(88vw,26rem)] sm:size-[32rem] md:size-[36rem]">
           <div
             className="absolute inset-0 overflow-hidden rounded-full border-4 border-white shadow-xl shadow-slate-300/50 ring-4 ring-slate-100"
             style={{
@@ -93,12 +101,11 @@ export function SpinWheel({ options, className = "" }: SpinWheelProps) {
           >
             {validOptions.map((label, i) => {
               const midAngle = i * segmentAngle + segmentAngle / 2;
-              const { x, y, labelRotation } = getLabelPlacement(midAngle);
-              const maxWidthPct = Math.min(44, Math.max(22, segmentAngle * 0.72));
+              const { x, y, labelRotation, maxWidthPct } = getLabelPlacement(midAngle, segmentAngle);
               return (
                 <span
                   key={`${label}-${i}`}
-                  className="pointer-events-none absolute line-clamp-3 text-center text-xs font-semibold leading-snug text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] sm:text-sm"
+                  className="pointer-events-none absolute line-clamp-3 px-0.5 text-center text-sm font-semibold leading-snug text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)] sm:text-base"
                   style={{
                     left: `${x}%`,
                     top: `${y}%`,
@@ -117,13 +124,13 @@ export function SpinWheel({ options, className = "" }: SpinWheelProps) {
             aria-hidden
           >
             <div className="relative size-0">
-              <div className="absolute left-0 top-1/2 size-0 -translate-y-1/2 border-y-[15px] border-r-[28px] border-y-transparent border-r-white" />
-              <div className="relative size-0 border-y-[13px] border-r-[24px] border-y-transparent border-r-slate-900 drop-shadow-sm" />
+              <div className="absolute left-0 top-1/2 size-0 -translate-y-1/2 border-y-[17px] border-r-[32px] border-y-transparent border-r-white" />
+              <div className="relative size-0 border-y-[15px] border-r-[28px] border-y-transparent border-r-slate-900 drop-shadow-sm" />
             </div>
           </div>
 
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="flex size-[4.25rem] items-center justify-center rounded-full border-4 border-white bg-slate-900 text-sm font-bold text-white shadow-inner">
+            <div className="flex size-16 items-center justify-center rounded-full border-4 border-white bg-slate-900 text-base font-bold text-white shadow-inner sm:size-[4.5rem]">
               GO
             </div>
           </div>
