@@ -169,12 +169,6 @@ export default function Home() {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-4">
-          <div className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
-            <p className="font-medium text-white">Cô Nhật Lệ</p>
-            <p className="text-xs text-slate-400">Giáo viên tiếng Nhật</p>
-          </div>
-        </div>
       </aside>
 
       {/* Main */}
