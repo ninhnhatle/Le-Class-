@@ -177,7 +177,7 @@ export default function Home() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">LeStudy · Bảng điều khiển</p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Thiết kế bài dạy 4 bước</h1>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">DẠY HỌC SÁNG TẠO</h1>
             </div>
             <p className="text-sm text-slate-500">Xin chào, cô Nhật Lệ — chúc cô một tiết dạy trọn vẹn.</p>
           </div>
