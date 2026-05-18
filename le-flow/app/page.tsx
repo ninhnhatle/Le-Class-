@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { WarmupTabContent } from "@/components/warmup/warmup-tab-content";
 
 type TabId = "warmup" | "knowledge" | "practice" | "application";
 
@@ -54,26 +55,7 @@ const tabs: {
 
 function TabPanel({ id }: { id: TabId }) {
   const panels: Record<TabId, React.ReactNode> = {
-    warmup: (
-      <div className="space-y-6">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Mục tiêu giai đoạn</h3>
-          <p className="mt-2 text-slate-700 leading-relaxed">
-            Tạo không khí học tập tích cực, kết nối kiến thức cũ với bài mới và gợi mở câu hỏi trung tâm của tiết dạy.
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl bg-amber-50/80 p-5 ring-1 ring-amber-100">
-            <p className="text-xs font-medium text-amber-800/90">Gợi ý hoạt động</p>
-            <p className="mt-2 text-sm text-amber-950/80">Trò chơi từ vựng nhanh, tranh ảnh dẫn dắt, câu đố 60 giây.</p>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-5 ring-1 ring-slate-100">
-            <p className="text-xs font-medium text-slate-600">Thời lượng gợi ý</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">5–10 phút</p>
-          </div>
-        </div>
-      </div>
-    ),
+    warmup: <WarmupTabContent />,
     knowledge: (
       <div className="space-y-6">
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
@@ -161,7 +143,7 @@ export default function Home() {
           </div>
           <div className="leading-tight">
             <p className="text-lg font-semibold tracking-tight">
-              L<span className="text-sky-300">é</span>flow
+              Le<span className="text-sky-300">Study</span>
             </p>
             <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400">Giáo án thông minh</p>
           </div>
@@ -189,8 +171,7 @@ export default function Home() {
 
         <div className="border-t border-white/10 p-4">
           <div className="rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
-            <p className="text-xs text-slate-400">Đăng nhập với tư cách</p>
-            <p className="mt-1 font-medium text-white">Cô Nhật Lệ</p>
+            <p className="font-medium text-white">Cô Nhật Lệ</p>
             <p className="text-xs text-slate-400">Giáo viên tiếng Nhật</p>
           </div>
         </div>
@@ -201,7 +182,7 @@ export default function Home() {
         <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/80 px-6 py-4 backdrop-blur-md">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Léflow · Bảng điều khiển</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">LeStudy · Bảng điều khiển</p>
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Thiết kế bài dạy 4 bước</h1>
             </div>
             <p className="text-sm text-slate-500">Xin chào, cô Nhật Lệ — chúc cô một tiết dạy trọn vẹn.</p>
