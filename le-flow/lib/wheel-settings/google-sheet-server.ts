@@ -1,11 +1,36 @@
 import { getDefaultWheelSettings, normalizeWheelSettings } from "./defaults";
 import type { WheelSettingsPayload } from "./types";
 
+function stripQuotes(value: string): string {
+  const v = value.trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    return v.slice(1, -1).trim();
+  }
+  return v;
+}
+
 /** Read at request time — avoids Next.js inlining undefined at build when env was missing. */
 function getWheelEnv() {
-  const webAppUrl = process.env["GOOGLE_APPS_SCRIPT_WEB_APP_URL"]?.trim() ?? "";
-  const apiSecret = process.env["WHEEL_SETTINGS_API_SECRET"]?.trim() ?? "";
+  const webAppUrl = stripQuotes(process.env["GOOGLE_APPS_SCRIPT_WEB_APP_URL"] ?? "");
+  const apiSecret = stripQuotes(process.env["WHEEL_SETTINGS_API_SECRET"] ?? "");
   return { webAppUrl, apiSecret };
+}
+
+function assertValidWebAppUrl(webAppUrl: string): URL {
+  try {
+    const url = new URL(webAppUrl);
+    if (!url.hostname.includes("script.google.com")) {
+      throw new Error("Hostname must be script.google.com");
+    }
+    if (!url.pathname.includes("/macros/s/")) {
+      throw new Error("Path must contain /macros/s/");
+    }
+    return url;
+  } catch {
+    throw new Error(
+      "GOOGLE_APPS_SCRIPT_WEB_APP_URL không hợp lệ trên Vercel. Dán URL Web App đầy đủ dạng https://script.google.com/macros/s/.../exec (không có dấu ngoặc hoặc khoảng trắng thừa).",
+    );
+  }
 }
 
 export function getGoogleSheetConfigStatus() {
@@ -30,7 +55,7 @@ async function callAppsScript<T>(
     throw new Error("Google Sheet integration is not configured");
   }
 
-  const url = new URL(webAppUrl);
+  const url = assertValidWebAppUrl(webAppUrl);
   url.searchParams.set("secret", apiSecret);
 
   const init: RequestInit = {
