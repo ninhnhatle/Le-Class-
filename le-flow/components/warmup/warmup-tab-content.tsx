@@ -10,6 +10,10 @@ import {
 } from "@/components/spin-wheel/constants";
 import { SpinWheel } from "@/components/spin-wheel/spin-wheel";
 import { WheelOptionsSettingsDialog } from "@/components/spin-wheel/wheel-options-settings-dialog";
+import { fetchWheelSettings, saveWheelSettings } from "@/lib/wheel-settings/client";
+import { toCopy } from "@/lib/wheel-settings/defaults";
+
+type SyncStatus = "loading" | "sheet" | "local" | "error";
 
 function loadStoredOptions(): string[] {
   if (typeof window === "undefined") return DEFAULT_WHEEL_OPTIONS;
@@ -46,21 +50,98 @@ function loadStoredCopy(): WheelCopySettings {
   }
 }
 
+function cacheLocally(options: string[], copy: WheelCopySettings) {
+  localStorage.setItem(WHEEL_OPTIONS_STORAGE_KEY, JSON.stringify(options));
+  localStorage.setItem(WHEEL_COPY_STORAGE_KEY, JSON.stringify(copy));
+}
+
+function syncStatusLabel(status: SyncStatus): string {
+  switch (status) {
+    case "loading":
+      return "Đang tải cài đặt…";
+    case "sheet":
+      return "Đã đồng bộ Google Sheet";
+    case "local":
+      return "Lưu cục bộ (chưa kết nối Sheet)";
+    case "error":
+      return "Lỗi đồng bộ — dùng bản cục bộ";
+  }
+}
+
 export function WarmupTabContent() {
   const [options, setOptions] = useState<string[]>(DEFAULT_WHEEL_OPTIONS);
   const [copy, setCopy] = useState<WheelCopySettings>(DEFAULT_WHEEL_COPY);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("loading");
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    setOptions(loadStoredOptions());
-    setCopy(loadStoredCopy());
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetchWheelSettings();
+        if (cancelled) return;
+
+        if (res.ok && res.data.options.length > 0) {
+          setOptions(res.data.options);
+          setCopy(toCopy(res.data));
+          cacheLocally(res.data.options, toCopy(res.data));
+          setSyncStatus(res.source === "google_sheet" ? "sheet" : "local");
+          setSyncError(res.source === "google_sheet" ? null : res.error ?? null);
+        } else {
+          const localOptions = loadStoredOptions();
+          const localCopy = loadStoredCopy();
+          setOptions(localOptions);
+          setCopy(localCopy);
+          setSyncStatus("local");
+          setSyncError(res.error ?? null);
+        }
+      } catch {
+        if (cancelled) return;
+        setOptions(loadStoredOptions());
+        setCopy(loadStoredCopy());
+        setSyncStatus("error");
+        setSyncError("Không thể tải cài đặt từ máy chủ.");
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const saveSettings = useCallback((nextOptions: string[], nextCopy: WheelCopySettings) => {
+  const saveSettings = useCallback(async (nextOptions: string[], nextCopy: WheelCopySettings) => {
+    setSaving(true);
+    setSaveError(null);
     setOptions(nextOptions);
     setCopy(nextCopy);
-    localStorage.setItem(WHEEL_OPTIONS_STORAGE_KEY, JSON.stringify(nextOptions));
-    localStorage.setItem(WHEEL_COPY_STORAGE_KEY, JSON.stringify(nextCopy));
+    cacheLocally(nextOptions, nextCopy);
+
+    try {
+      const res = await saveWheelSettings({
+        title: nextCopy.title,
+        subtitle: nextCopy.subtitle,
+        options: nextOptions,
+      });
+
+      if (res.ok && res.source === "google_sheet") {
+        setSyncStatus("sheet");
+        setSyncError(null);
+        setSettingsOpen(false);
+      } else {
+        setSyncStatus("local");
+        setSaveError(res.error ?? "Không lưu được lên Google Sheet. Đã lưu trên trình duyệt.");
+      }
+    } catch {
+      setSyncStatus("error");
+      setSaveError("Không lưu được lên Google Sheet. Đã lưu trên trình duyệt.");
+    } finally {
+      setSaving(false);
+    }
   }, []);
 
   return (
@@ -77,11 +158,29 @@ export function WarmupTabContent() {
           <div>
             <h3 className="text-base font-semibold text-slate-900">{copy.title}</h3>
             <p className="mt-1 text-sm text-slate-600">{copy.subtitle}</p>
+            <p
+              className={`mt-2 text-xs font-medium ${
+                syncStatus === "sheet"
+                  ? "text-emerald-700"
+                  : syncStatus === "loading"
+                    ? "text-slate-500"
+                    : "text-amber-800"
+              }`}
+            >
+              {syncStatusLabel(syncStatus)}
+            </p>
+            {syncError && syncStatus !== "sheet" ? (
+              <p className="mt-1 text-xs text-slate-500">{syncError}</p>
+            ) : null}
           </div>
           <button
             type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+            onClick={() => {
+              setSaveError(null);
+              setSettingsOpen(true);
+            }}
+            disabled={syncStatus === "loading"}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
           >
             <svg className="size-5 text-slate-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
               <path
@@ -103,6 +202,8 @@ export function WarmupTabContent() {
         onClose={() => setSettingsOpen(false)}
         options={options}
         copy={copy}
+        saving={saving}
+        saveError={saveError}
         onSave={saveSettings}
       />
 

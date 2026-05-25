@@ -13,7 +13,9 @@ type WheelOptionsSettingsDialogProps = {
   onClose: () => void;
   options: string[];
   copy: WheelCopySettings;
-  onSave: (options: string[], copy: WheelCopySettings) => void;
+  saving?: boolean;
+  saveError?: string | null;
+  onSave: (options: string[], copy: WheelCopySettings) => void | Promise<void>;
 };
 
 export function WheelOptionsSettingsDialog({
@@ -22,6 +24,8 @@ export function WheelOptionsSettingsDialog({
   options,
   copy,
   onSave,
+  saving = false,
+  saveError = null,
 }: WheelOptionsSettingsDialogProps) {
   const [draft, setDraft] = useState<string[]>(options);
   const [copyDraft, setCopyDraft] = useState<WheelCopySettings>(copy);
@@ -57,12 +61,11 @@ export function WheelOptionsSettingsDialog({
     setDraft((prev) => prev.map((item, i) => (i === index ? value : item)));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const cleaned = draft.map((o) => o.trim()).filter(Boolean);
     const title = copyDraft.title.trim() || DEFAULT_WHEEL_COPY.title;
     const subtitle = copyDraft.subtitle.trim() || DEFAULT_WHEEL_COPY.subtitle;
-    onSave(cleaned, { title, subtitle });
-    onClose();
+    await onSave(cleaned, { title, subtitle });
   };
 
   return (
@@ -83,14 +86,18 @@ export function WheelOptionsSettingsDialog({
           <button
             type="button"
             onClick={handleSave}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+            disabled={saving}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
           >
-            Lưu
+            {saving ? "Đang lưu…" : "Lưu"}
           </button>
         </>
       }
     >
       <div className="space-y-4">
+        {saveError ? (
+          <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-100">{saveError}</p>
+        ) : null}
         <div>
           <label htmlFor="wheel-title" className="mb-1.5 block text-sm font-medium text-slate-700">
             Tiêu đề
