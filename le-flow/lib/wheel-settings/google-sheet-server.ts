@@ -1,23 +1,37 @@
 import { getDefaultWheelSettings, normalizeWheelSettings } from "./defaults";
 import type { WheelSettingsPayload } from "./types";
 
-const WEB_APP_URL = process.env.GOOGLE_APPS_SCRIPT_WEB_APP_URL;
-const API_SECRET = process.env.WHEEL_SETTINGS_API_SECRET;
+/** Read at request time — avoids Next.js inlining undefined at build when env was missing. */
+function getWheelEnv() {
+  const webAppUrl = process.env["GOOGLE_APPS_SCRIPT_WEB_APP_URL"]?.trim() ?? "";
+  const apiSecret = process.env["WHEEL_SETTINGS_API_SECRET"]?.trim() ?? "";
+  return { webAppUrl, apiSecret };
+}
+
+export function getGoogleSheetConfigStatus() {
+  const { webAppUrl, apiSecret } = getWheelEnv();
+  return {
+    hasUrl: webAppUrl.length > 0,
+    hasSecret: apiSecret.length > 0,
+    configured: webAppUrl.length > 0 && apiSecret.length > 0,
+  };
+}
 
 function isConfigured(): boolean {
-  return Boolean(WEB_APP_URL?.trim() && API_SECRET?.trim());
+  return getGoogleSheetConfigStatus().configured;
 }
 
 async function callAppsScript<T>(
   method: "GET" | "POST",
   body?: Record<string, unknown>,
 ): Promise<T> {
-  if (!isConfigured()) {
+  const { webAppUrl, apiSecret } = getWheelEnv();
+  if (!webAppUrl || !apiSecret) {
     throw new Error("Google Sheet integration is not configured");
   }
 
-  const url = new URL(WEB_APP_URL!);
-  url.searchParams.set("secret", API_SECRET!);
+  const url = new URL(webAppUrl);
+  url.searchParams.set("secret", apiSecret);
 
   const init: RequestInit = {
     method,
@@ -30,7 +44,7 @@ async function callAppsScript<T>(
       ...init.headers,
       "Content-Type": "application/json",
     };
-    init.body = JSON.stringify({ ...body, secret: API_SECRET });
+    init.body = JSON.stringify({ ...body, secret: apiSecret });
   }
 
   const res = await fetch(url.toString(), init);
@@ -52,6 +66,20 @@ async function callAppsScript<T>(
 
 export function isGoogleSheetEnabled(): boolean {
   return isConfigured();
+}
+
+export function getGoogleSheetConfigErrorMessage(): string {
+  const { hasUrl, hasSecret } = getGoogleSheetConfigStatus();
+  if (!hasUrl && !hasSecret) {
+    return "Chưa cấu hình Google Sheet. Thêm GOOGLE_APPS_SCRIPT_WEB_APP_URL và WHEEL_SETTINGS_API_SECRET trên Vercel (Production), rồi Redeploy.";
+  }
+  if (!hasUrl) {
+    return "Thiếu GOOGLE_APPS_SCRIPT_WEB_APP_URL trên Vercel. Sau khi thêm, bấm Redeploy deployment Production.";
+  }
+  if (!hasSecret) {
+    return "Thiếu WHEEL_SETTINGS_API_SECRET trên Vercel. Sau khi thêm, bấm Redeploy deployment Production.";
+  }
+  return "";
 }
 
 export async function fetchWheelSettingsFromSheet(): Promise<WheelSettingsPayload> {

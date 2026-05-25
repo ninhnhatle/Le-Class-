@@ -136,7 +136,14 @@ Sau khi code đã có trên GitHub và project Vercel đã link repo:
 
 4. **Save**.
 
-### 4.2 Deploy lại
+### 4.2 Deploy lại (bắt buộc sau khi thêm env)
+
+Biến môi trường **chỉ có hiệu lực sau lần deploy tiếp theo**. Nếu đã thêm env nhưng API vẫn báo “Chưa cấu hình”:
+
+1. Vercel → project **le-class** → **Deployments**
+2. Deployment Production mới nhất → **⋯** → **Redeploy** (không bật “Use existing Build Cache” nếu vẫn lỗi)
+
+Hoặc push code mới:
 
 ```bash
 git add .
@@ -144,7 +151,14 @@ git commit -m "feat: sync wheel settings with Google Sheet"
 git push
 ```
 
-Vercel tự build/deploy. Không cần file `vercel.json` riêng cho tính năng này.
+**Lưu ý:** Biến hiện chỉ cần gắn **Production** (URL `le-study.vercel.app`). Preview deployments cần thêm env riêng cho môi trường Preview nếu bạn test trên URL preview.
+
+Đẩy env từ `.env.local` lên Vercel:
+
+```bash
+npx vercel link --project le-class --yes
+./scripts/push-vercel-env.sh .env.local
+```
 
 ### 4.3 Kiểm tra trên production
 
@@ -177,7 +191,8 @@ Client: `lib/wheel-settings/client.ts`
 |-------------|------------|
 | `Unauthorized` | Secret trên Vercel ≠ Script property; deploy lại Web App. |
 | `Tab WHEEL_SETTINGS not found` | Chạy `setupWheelSettingsSheet` trong Apps Script. |
-| `source: defaults` trên production | Thiếu env trên Vercel hoặc chưa redeploy sau khi thêm env. |
+| `source: defaults` trên production | Thiếu env trên **Production**, hoặc **chưa Redeploy** sau khi thêm env (thường gặp nhất). |
+| Env có trên dashboard nhưng API không thấy | **Redeploy** Production; đảm bảo tên biến đúng: `GOOGLE_APPS_SCRIPT_WEB_APP_URL`, `WHEEL_SETTINGS_API_SECRET`. |
 | POST 502 | Web App chưa deploy “Anyone”, hoặc URL sai (phải là `/exec`). |
 | Sheet không đổi sau Lưu | Xem log Vercel → Functions; test `curl` POST trực tiếp tới Web App. |
 | `options_json` lỗi | Phải là JSON hợp lệ, ví dụ `["a","b"]` — không có dấu nháy đơn kiểu Excel. |

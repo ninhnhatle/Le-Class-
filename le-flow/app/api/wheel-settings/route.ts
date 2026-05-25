@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getDefaultWheelSettings, normalizeWheelSettings } from "@/lib/wheel-settings/defaults";
 import {
   fetchWheelSettingsFromSheet,
+  getGoogleSheetConfigErrorMessage,
+  getGoogleSheetConfigStatus,
   isGoogleSheetEnabled,
   saveWheelSettingsToSheet,
 } from "@/lib/wheel-settings/google-sheet-server";
@@ -17,9 +19,9 @@ export async function GET() {
         ok: true,
         source: "defaults",
         data,
-        error:
-          "Chưa cấu hình Google Sheet. Thêm GOOGLE_APPS_SCRIPT_WEB_APP_URL và WHEEL_SETTINGS_API_SECRET trên Vercel.",
-      } satisfies WheelSettingsApiResponse);
+        error: getGoogleSheetConfigErrorMessage(),
+        config: getGoogleSheetConfigStatus(),
+      } satisfies WheelSettingsApiResponse & { config?: ReturnType<typeof getGoogleSheetConfigStatus> });
     }
 
     const data = await fetchWheelSettingsFromSheet();
@@ -54,9 +56,9 @@ export async function POST(request: Request) {
           ok: false,
           source: "defaults",
           data: settings,
-          error:
-            "Chưa cấu hình Google Sheet. Thêm biến môi trường trên Vercel (xem docs/GOOGLE_SHEETS_WHEEL_SETTINGS.md).",
-        } satisfies WheelSettingsApiResponse,
+          error: getGoogleSheetConfigErrorMessage(),
+          config: getGoogleSheetConfigStatus(),
+        } satisfies WheelSettingsApiResponse & { config?: ReturnType<typeof getGoogleSheetConfigStatus> },
         { status: 503 },
       );
     }
