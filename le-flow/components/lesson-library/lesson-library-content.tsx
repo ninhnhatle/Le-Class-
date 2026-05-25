@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   GRADE_FILTERS,
@@ -94,15 +95,16 @@ export function LessonLibraryContent() {
         <p className="mt-1 text-sm text-sky-900/70">Bài dạy đã đánh dấu yêu thích hoặc dùng gần đây.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {favorites.map((lesson) => (
-            <span
+            <Link
               key={lesson.id}
-              className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-800 ring-1 ring-sky-100"
+              href={`/thu-vien-bai-day/${lesson.id}`}
+              className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-800 ring-1 ring-sky-100 transition hover:bg-white hover:ring-sky-200"
             >
               <svg className="size-3.5 shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
               </svg>
               <span className="truncate">{lesson.title}</span>
-            </span>
+            </Link>
           ))}
         </div>
       </div>
@@ -212,44 +214,40 @@ export function LessonLibraryContent() {
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
           {filtered.map((lesson) => (
-            <li
-              key={lesson.id}
-              className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
-                  {PHASE_LABELS[lesson.phase]}
-                </span>
-                {lesson.favorite ? (
-                  <svg className="size-4 shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 24 24" aria-label="Yêu thích">
-                    <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                  </svg>
-                ) : null}
-              </div>
-              <h3 className="mt-3 text-base font-semibold leading-snug text-slate-900 group-hover:text-sky-800">
-                {lesson.title}
-              </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                {lesson.subject} · {lesson.grade} · {lesson.durationMin} phút
-              </p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {lesson.tags.map((tag) => (
-                  <span key={tag} className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-100">
-                    {tag}
+            <li key={lesson.id}>
+              <Link
+                href={`/thu-vien-bai-day/${lesson.id}`}
+                className="group flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-sky-200 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
+                    {PHASE_LABELS[lesson.phase]}
                   </span>
-                ))}
-              </div>
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-                <span className="text-xs text-slate-400">Cập nhật {formatDate(lesson.updatedAt)}</span>
-                <div className="flex gap-2">
-                  <button type="button" className="text-xs font-medium text-slate-600 hover:text-slate-900">
-                    Nhân bản
-                  </button>
-                  <button type="button" className="text-xs font-medium text-sky-700 hover:text-sky-900">
-                    Mở bài
-                  </button>
+                  {lesson.favorite ? (
+                    <svg className="size-4 shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 24 24" aria-label="Yêu thích">
+                      <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                    </svg>
+                  ) : null}
                 </div>
-              </div>
+                <h3 className="mt-3 text-base font-semibold leading-snug text-slate-900 group-hover:text-sky-800">
+                  {lesson.title}
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {lesson.subject} · {lesson.grade} · {lesson.durationMin} phút
+                </p>
+                <p className="mt-2 line-clamp-2 text-sm text-slate-600">{lesson.description}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {lesson.tags.map((tag) => (
+                    <span key={tag} className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-100">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
+                  <span className="text-xs text-slate-400">Cập nhật {formatDate(lesson.updatedAt)}</span>
+                  <span className="text-xs font-medium text-sky-700 group-hover:text-sky-900">Xem chi tiết →</span>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>

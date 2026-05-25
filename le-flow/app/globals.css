@@ -24,3 +24,43 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Interactive video — fullscreen stage must fill viewport so overlays stay visible */
+.video-player-stage:fullscreen,
+.video-player-stage:-webkit-full-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 0;
+  background: #020617;
+}
+
+.video-player-stage:fullscreen .video-player-media,
+.video-player-stage:-webkit-full-screen .video-player-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-player-stage:fullscreen .question-overlay-layer,
+.video-player-stage:-webkit-full-screen .question-overlay-layer,
+.video-player-stage:fullscreen .video-player-complete-layer,
+.video-player-stage:-webkit-full-screen .video-player-complete-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  width: 100%;
+  height: 100%;
+}
+
+.video-player-stage:fullscreen .next-question-indicator-layer,
+.video-player-stage:-webkit-full-screen .next-question-indicator-layer {
+  z-index: 40;
+}

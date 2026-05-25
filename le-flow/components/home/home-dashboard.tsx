@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { KnowledgeTabContent } from "@/components/interactive-video/knowledge-tab-content";
 import { WarmupTabContent } from "@/components/warmup/warmup-tab-content";
 
 type TabId = "warmup" | "knowledge" | "practice" | "application";
@@ -56,25 +57,7 @@ const tabs: {
 function TabPanel({ id }: { id: TabId }) {
   const panels: Record<TabId, React.ReactNode> = {
     warmup: <WarmupTabContent />,
-    knowledge: (
-      <div className="space-y-6">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Luồng dạy gợi ý</h3>
-          <ol className="mt-4 list-decimal space-y-3 pl-5 text-slate-700 leading-relaxed">
-            <li>Trình bày mục tiêu học tập rõ ràng, có thể đo lường.</li>
-            <li>Minh họa bằng ví dụ mẫu — nói chậm, nhấn mạnh cấu trúc.</li>
-            <li>Tổ chức hỏi đáp có kiểm soát để xác nhận học sinh đã nắm ý chính.</li>
-          </ol>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {["Bảng từ khóa", "Sơ đồ tư duy", "Video ngắn"].map((chip) => (
-            <span key={chip} className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-800 ring-1 ring-sky-100">
-              {chip}
-            </span>
-          ))}
-        </div>
-      </div>
-    ),
+    knowledge: <KnowledgeTabContent />,
     practice: (
       <div className="space-y-6">
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
