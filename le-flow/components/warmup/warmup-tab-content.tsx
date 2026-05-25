@@ -144,6 +144,19 @@ export function WarmupTabContent() {
     }
   }, []);
 
+  if (syncStatus === "loading") {
+    return (
+      <div
+        className="flex min-h-[min(24rem,50vh)] items-center justify-center rounded-2xl border border-slate-200/80 bg-white/90 p-12 shadow-sm"
+        role="status"
+        aria-busy="true"
+        aria-label="Đang kết nối"
+      >
+        <div className="size-10 animate-spin rounded-full border-[3px] border-slate-200 border-t-sky-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
@@ -162,9 +175,7 @@ export function WarmupTabContent() {
               className={`mt-2 text-xs font-medium ${
                 syncStatus === "sheet"
                   ? "text-emerald-700"
-                  : syncStatus === "loading"
-                    ? "text-slate-500"
-                    : "text-amber-800"
+                  : "text-amber-800"
               }`}
             >
               {syncStatusLabel(syncStatus)}
@@ -179,8 +190,7 @@ export function WarmupTabContent() {
               setSaveError(null);
               setSettingsOpen(true);
             }}
-            disabled={syncStatus === "loading"}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
           >
             <svg className="size-5 text-slate-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
               <path
