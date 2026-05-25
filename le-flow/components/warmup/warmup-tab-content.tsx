@@ -58,13 +58,13 @@ function cacheLocally(options: string[], copy: WheelCopySettings) {
 function syncStatusLabel(status: SyncStatus): string {
   switch (status) {
     case "loading":
-      return "Đang tải cài đặt…";
+      return "Connecting…";
     case "sheet":
-      return "Đã đồng bộ Google Sheet";
+      return "Connected";
     case "local":
-      return "Lưu cục bộ (chưa kết nối Sheet)";
+      return "Local only";
     case "error":
-      return "Lỗi đồng bộ — dùng bản cục bộ";
+      return "Disconnected";
   }
 }
 
