@@ -1,7 +1,8 @@
 import { createQuestionId } from "@/lib/interactive-video/utils";
+import { getStepSettingsKey, STEP_IDS } from "@/lib/step-settings/keys";
 import type { PracticeQuestion, PracticeSettings } from "./types";
 
-export const PRACTICE_SETTINGS_STORAGE_KEY = "lestudy-practice-settings";
+export const PRACTICE_SETTINGS_STORAGE_KEY = getStepSettingsKey(STEP_IDS.practice);
 
 export const DEFAULT_PRACTICE_QUESTIONS: PracticeQuestion[] = [
   {

@@ -34,6 +34,9 @@ var DEFAULT_OPTIONS = [
 ];
 
 function doGet(e) {
+  if (e && e.parameter && e.parameter.resource === "step") {
+    return handleStepSettingsGet_(e);
+  }
   try {
     if (!verifySecret_(e)) {
       return jsonResponse_({ ok: false, error: "Unauthorized" }, 401);
@@ -46,6 +49,17 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  if (e && e.postData && e.postData.contents) {
+    try {
+      var peek = JSON.parse(e.postData.contents);
+      if (peek && peek.step && peek.settings) {
+        return handleStepSettingsPost_(e);
+      }
+    } catch (ignore) {}
+  }
+  if (e && e.parameter && e.parameter.resource === "step") {
+    return handleStepSettingsPost_(e);
+  }
   try {
     if (!e.postData || !e.postData.contents) {
       return jsonResponse_({ ok: false, error: "Missing body" }, 400);

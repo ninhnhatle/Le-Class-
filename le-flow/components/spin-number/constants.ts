@@ -1,4 +1,6 @@
-export const SPIN_NUMBER_SETTINGS_STORAGE_KEY = "lestudy-warmup-spin-number-settings";
+import { getStepSettingsKey, STEP_IDS } from "@/lib/step-settings/keys";
+
+export const SPIN_NUMBER_SETTINGS_STORAGE_KEY = getStepSettingsKey(STEP_IDS.warmup);
 
 export type SpinNumberMode = "list" | "range";
 

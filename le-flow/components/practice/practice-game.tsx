@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { GameCornerControls } from "@/components/ui/game-corner-controls";
 import { Dialog } from "@/components/ui/dialog";
 import { RichTextContent } from "@/components/ui/rich-text-content";
@@ -9,24 +9,23 @@ import { SpinWheel } from "@/components/spin-wheel/spin-wheel";
 import { useFullscreenContainer } from "@/hooks/use-fullscreen-container";
 import {
   DEFAULT_PRACTICE_SETTINGS,
-  PRACTICE_SETTINGS_STORAGE_KEY,
 } from "@/lib/practice/constants";
 import type { PracticeSettings } from "@/lib/practice/types";
 import { checkPracticeAnswer, getRequiredAttempt, sanitizePracticeSettings } from "@/lib/practice/utils";
-
-function loadStoredSettings(): PracticeSettings {
-  if (typeof window === "undefined") return DEFAULT_PRACTICE_SETTINGS;
-  try {
-    const raw = localStorage.getItem(PRACTICE_SETTINGS_STORAGE_KEY);
-    if (!raw) return DEFAULT_PRACTICE_SETTINGS;
-    return sanitizePracticeSettings(JSON.parse(raw) as Partial<PracticeSettings>);
-  } catch {
-    return DEFAULT_PRACTICE_SETTINGS;
-  }
-}
+import { STEP_IDS } from "@/lib/step-settings/keys";
+import {
+  loadStepSettingsLocal,
+  loadStepSettingsRemote,
+  persistStepSettingsRemote,
+} from "@/lib/step-settings/storage";
 
 export function PracticeGame() {
-  const [settings, setSettings] = useState<PracticeSettings>(() => loadStoredSettings());
+  const [settings, setSettings] = useState<PracticeSettings>(() =>
+    loadStepSettingsLocal(STEP_IDS.practice, {
+      defaults: DEFAULT_PRACTICE_SETTINGS,
+      sanitize: sanitizePracticeSettings,
+    }),
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
 
@@ -39,13 +38,21 @@ export function PracticeGame() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [unlockedWheel, setUnlockedWheel] = useState(false);
+  const [showRewardWheel, setShowRewardWheel] = useState(false);
   const [answeredLocked, setAnsweredLocked] = useState(false);
   const [prizeResult, setPrizeResult] = useState<string | null>(null);
 
   const { containerRef, isFullscreen, portalContainer, toggleFullscreen } = useFullscreenContainer();
 
+  useEffect(() => {
+    void loadStepSettingsRemote(STEP_IDS.practice).then(({ settings: remote }) => {
+      setSettings(remote);
+    });
+  }, []);
+
   const handleToggleFullscreen = useCallback(async () => {
     if (!isFullscreen) setSettingsOpen(false);
+    if (isFullscreen) setShowRewardWheel(false);
     await toggleFullscreen();
   }, [isFullscreen, toggleFullscreen]);
 
@@ -67,6 +74,7 @@ export function PracticeGame() {
     resetInputs();
     setAttemptCount(0);
     setUnlockedWheel(false);
+    setShowRewardWheel(false);
     setAnsweredLocked(false);
     setPrizeResult(null);
   };
@@ -79,7 +87,7 @@ export function PracticeGame() {
 
   const saveSettings = (nextSettings: PracticeSettings) => {
     setSettings(nextSettings);
-    localStorage.setItem(PRACTICE_SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings));
+    void persistStepSettingsRemote(STEP_IDS.practice, nextSettings);
     setSessionKey((prev) => prev + 1);
     setQuestionIndex(0);
     resetQuestionState();
@@ -153,6 +161,12 @@ export function PracticeGame() {
     setAnsweredLocked(true);
   };
 
+  const progressPercent = questions.length > 0 ? ((questionIndex + 1) / questions.length) * 100 : 0;
+  const optionLetters = ["A", "B", "C", "D", "E", "F", "G", "H"];
+  const showQuestionPanel = !isFullscreen || !unlockedWheel || !showRewardWheel;
+  const showWheelPanel = unlockedWheel && (!isFullscreen || showRewardWheel);
+  const hideAnswersForRewardPrompt = isFullscreen && unlockedWheel && !showRewardWheel;
+
   if (!question) {
     return (
       <>
@@ -188,7 +202,13 @@ export function PracticeGame() {
       <div
         ref={containerRef}
         key={sessionKey}
-        className={`relative space-y-6 rounded-3xl ${isFullscreen ? "flex h-full min-h-screen flex-col justify-center bg-gradient-to-br from-violet-50 to-fuchsia-50 p-6 sm:p-10" : "pt-12"}`}
+        className={`relative space-y-6 rounded-3xl ${
+          isFullscreen
+            ? `flex h-full min-h-screen flex-col bg-gradient-to-br from-violet-950 via-violet-900 to-fuchsia-950 p-6 sm:p-10 lg:p-14 ${
+                showRewardWheel ? "items-center justify-center" : "justify-center"
+              }`
+            : "pt-12"
+        }`}
       >
         <GameCornerControls
           isFullscreen={isFullscreen}
@@ -197,37 +217,104 @@ export function PracticeGame() {
           showSettings={!isFullscreen}
         />
 
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">{settings.title}</h3>
-          <p className="mt-1 text-sm text-slate-600">{settings.subtitle}</p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Trả lời câu hỏi</h3>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+        {!isFullscreen ? (
+          <div className="overflow-hidden rounded-2xl border border-violet-200/60 bg-gradient-to-r from-violet-50/90 to-fuchsia-50/50 p-5 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{settings.title}</h3>
+                <p className="mt-1 text-sm text-slate-600">{settings.subtitle}</p>
+              </div>
+              <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-violet-800 shadow-sm ring-1 ring-violet-100">
+                {questions.length} câu hỏi
+              </span>
+            </div>
+            <div className="mt-4">
+              <div className="mb-1.5 flex justify-between text-xs font-medium text-violet-800/80">
+                <span>Tiến độ</span>
+                <span>
+                  Câu {questionIndex + 1} / {questions.length}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/70">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        ) : showQuestionPanel ? (
+          <div className="mx-auto w-full max-w-5xl text-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-2 text-base font-semibold text-violet-100 backdrop-blur-sm sm:text-lg">
               Câu {questionIndex + 1} / {questions.length}
             </span>
+            <div className="mx-auto mt-4 h-2 max-w-md overflow-hidden rounded-full bg-white/15">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-300 to-fuchsia-300 transition-all duration-500"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
           </div>
+        ) : null}
 
-          <RichTextContent html={question.promptHtml} className="text-base font-semibold text-slate-900 [&_p]:leading-snug" />
+        {showQuestionPanel ? (
+        <div
+          className={`mx-auto w-full border shadow-xl ${
+            isFullscreen
+              ? "max-w-5xl rounded-3xl border-white/10 bg-white p-8 sm:p-10 lg:p-14"
+              : "rounded-2xl border-violet-100/80 bg-white p-6 shadow-md ring-1 ring-violet-50"
+          }`}
+        >
+          {!isFullscreen ? (
+            <div className="mb-5 flex items-center gap-2">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-violet-100 text-sm font-bold text-violet-700">
+                ?
+              </span>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-violet-700">Trả lời câu hỏi</h3>
+            </div>
+          ) : null}
 
-          <div className="mt-4 space-y-3">
+          <RichTextContent
+            html={question.promptHtml}
+            className={
+              isFullscreen
+                ? "text-2xl font-bold leading-snug text-slate-900 sm:text-3xl lg:text-4xl [&_img]:my-4 [&_p]:leading-relaxed"
+                : "text-base font-semibold text-slate-900 [&_p]:leading-snug"
+            }
+          />
+
+          {!hideAnswersForRewardPrompt ? (
+          <div className={isFullscreen ? "mt-8 space-y-4 sm:mt-10" : "mt-5 space-y-3"}>
             {question.type === "multiple_choice" ? (
-              <ul className="space-y-2">
+              <ul className={isFullscreen ? "space-y-4" : "space-y-2"}>
                 {(question.options ?? []).map((opt, i) => (
                   <li key={i}>
                     <label
-                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
+                      className={`flex cursor-pointer items-center gap-4 rounded-2xl border transition ${
+                        isFullscreen ? "px-6 py-5 sm:px-8 sm:py-6" : "px-4 py-3"
+                      } ${
                         selectedIndex === i
-                          ? "border-sky-400 bg-sky-50 ring-1 ring-sky-200"
-                          : "border-slate-200 bg-slate-50/80 hover:border-slate-300"
+                          ? "border-violet-400 bg-violet-50 ring-2 ring-violet-200"
+                          : isFullscreen
+                            ? "border-slate-200 bg-slate-50/90 hover:border-violet-300 hover:bg-violet-50/50"
+                            : "border-slate-200 bg-slate-50/80 hover:border-slate-300"
                       } ${answeredLocked ? "cursor-not-allowed opacity-60" : ""}`}
                     >
+                      <span
+                        className={`flex shrink-0 items-center justify-center rounded-xl font-bold ${
+                          isFullscreen ? "size-12 text-lg sm:size-14 sm:text-xl" : "size-8 text-sm"
+                        } ${
+                          selectedIndex === i
+                            ? "bg-violet-600 text-white"
+                            : "bg-white text-violet-700 ring-1 ring-violet-200"
+                        }`}
+                      >
+                        {optionLetters[i] ?? i + 1}
+                      </span>
                       <input
                         type="radio"
                         name={`practice-answer-${question.id}`}
-                        className="mt-1 size-4 shrink-0 accent-sky-600"
+                        className="sr-only"
                         checked={selectedIndex === i}
                         disabled={answeredLocked}
                         onChange={() => {
@@ -235,7 +322,9 @@ export function PracticeGame() {
                           setWrongMessage(null);
                         }}
                       />
-                      <span className="text-sm text-slate-800">{opt}</span>
+                      <span className={isFullscreen ? "text-lg font-medium text-slate-800 sm:text-xl lg:text-2xl" : "text-sm text-slate-800"}>
+                        {opt}
+                      </span>
                     </label>
                   </li>
                 ))}
@@ -243,7 +332,7 @@ export function PracticeGame() {
             ) : null}
 
             {question.type === "true_false" ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid grid-cols-2 ${isFullscreen ? "gap-5" : "gap-3"}`}>
                 {[
                   { value: true, label: "Đúng" },
                   { value: false, label: "Sai" },
@@ -256,10 +345,12 @@ export function PracticeGame() {
                       setTrueFalseChoice(value);
                       setWrongMessage(null);
                     }}
-                    className={`rounded-xl border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    className={`rounded-2xl border font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isFullscreen ? "px-8 py-6 text-2xl sm:text-3xl" : "px-4 py-3 text-sm"
+                    } ${
                       trueFalseChoice === value
-                        ? "border-sky-400 bg-sky-50 text-sky-900 ring-1 ring-sky-200"
-                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300"
+                        ? "border-violet-400 bg-violet-50 text-violet-900 ring-2 ring-violet-200"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-violet-300 hover:bg-violet-50/50"
                     }`}
                   >
                     {label}
@@ -278,30 +369,48 @@ export function PracticeGame() {
                   setWrongMessage(null);
                 }}
                 placeholder="Nhập câu trả lời của bạn..."
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none ring-sky-200 focus:border-sky-400 focus:ring-2 disabled:bg-slate-50"
+                className={`w-full rounded-2xl border border-slate-200 bg-white text-slate-900 outline-none ring-violet-200 focus:border-violet-400 focus:ring-2 disabled:bg-slate-50 ${
+                  isFullscreen ? "px-6 py-5 text-xl sm:text-2xl lg:text-3xl" : "px-4 py-3 text-sm"
+                }`}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !answeredLocked && !unlockedWheel) submit();
                 }}
               />
             ) : null}
           </div>
+          ) : null}
 
           {wrongMessage ? (
-            <p className="mt-3 text-sm font-medium text-rose-600" role="alert">
+            <p
+              className={`mt-4 font-semibold text-rose-600 ${isFullscreen ? "text-lg sm:text-xl" : "text-sm"}`}
+              role="alert"
+            >
               {wrongMessage}
             </p>
           ) : null}
 
           {successMessage ? (
-            <p className="mt-3 text-sm font-medium text-emerald-700" role="status">
+            <p
+              className={`mt-4 font-semibold text-emerald-700 ${isFullscreen ? "text-lg sm:text-xl" : "text-sm"}`}
+              role="status"
+            >
               {successMessage}
             </p>
           ) : null}
 
-          {showExplanation && question.explanationHtml.trim() ? (
-            <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Giải thích</p>
-              <RichTextContent html={question.explanationHtml} className="mt-2" />
+          {showExplanation && question.explanationHtml.trim() && !hideAnswersForRewardPrompt ? (
+            <div
+              className={`mt-5 rounded-2xl border border-sky-100 bg-sky-50/80 ${
+                isFullscreen ? "px-6 py-5 sm:px-8 sm:py-6" : "px-4 py-3"
+              }`}
+            >
+              <p className={`font-semibold uppercase tracking-wide text-sky-700 ${isFullscreen ? "text-sm" : "text-xs"}`}>
+                Giải thích
+              </p>
+              <RichTextContent
+                html={question.explanationHtml}
+                className={isFullscreen ? "mt-3 text-base sm:text-lg [&_p]:leading-relaxed" : "mt-2"}
+              />
             </div>
           ) : null}
 
@@ -309,35 +418,63 @@ export function PracticeGame() {
             <button
               type="button"
               onClick={submit}
-              className="mt-5 w-full rounded-xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
+              className={`mt-6 w-full rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 font-bold text-white shadow-lg shadow-violet-500/25 transition hover:from-violet-700 hover:to-fuchsia-700 ${
+                isFullscreen ? "py-5 text-xl sm:text-2xl" : "py-3 text-sm"
+              }`}
             >
               Kiểm tra đáp án
             </button>
           ) : null}
-        </div>
 
-        {unlockedWheel ? (
-          <div className="rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50/90 to-fuchsia-50/40 p-6 shadow-sm">
-            <div className="mb-6">
-              <h3 className="text-base font-semibold text-slate-900">Vòng quay phần quà</h3>
-              <p className="mt-1 text-sm text-slate-600">Quay để nhận phần thưởng cho câu trả lời đúng.</p>
+          {unlockedWheel && isFullscreen && !showRewardWheel ? (
+            <button
+              type="button"
+              onClick={() => setShowRewardWheel(true)}
+              className="mt-6 w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-5 text-xl font-bold text-white shadow-lg shadow-amber-500/30 transition hover:from-amber-600 hover:to-orange-600 sm:text-2xl"
+            >
+              Nhận thưởng
+            </button>
+          ) : null}
+        </div>
+        ) : null}
+
+        {showWheelPanel ? (
+          <div
+            className={`mx-auto w-full border shadow-xl ${
+              isFullscreen
+                ? "flex max-w-5xl flex-1 flex-col items-center justify-center rounded-3xl border-white/10 bg-white/95 p-6 sm:p-8"
+                : "rounded-2xl border-violet-200/80 bg-gradient-to-br from-violet-50/90 to-fuchsia-50/40 p-6 shadow-sm"
+            }`}
+          >
+            <div className={`mb-6 text-center ${isFullscreen ? "sm:mb-4" : "sm:text-left"}`}>
+              <h3 className={`font-bold text-slate-900 ${isFullscreen ? "text-2xl sm:text-3xl" : "text-base"}`}>
+                Vòng quay phần quà
+              </h3>
+              <p className={`mt-1 text-slate-600 ${isFullscreen ? "text-base sm:text-lg" : "text-sm"}`}>
+                Quay để nhận phần thưởng cho câu trả lời đúng.
+              </p>
             </div>
             <SpinWheel
               key={`wheel-${questionIndex}-${sessionKey}`}
               options={settings.prizeOptions}
               hideInlineResult
               onResult={setPrizeResult}
+              className={isFullscreen ? "w-full" : ""}
             />
             {!isLastQuestion ? (
               <button
                 type="button"
                 onClick={goToNextQuestion}
-                className="mt-6 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className={`mt-6 w-full rounded-2xl border border-slate-200 bg-white font-semibold text-slate-700 transition hover:bg-slate-50 ${
+                  isFullscreen ? "py-4 text-lg" : "py-3 text-sm"
+                }`}
               >
                 Câu hỏi tiếp theo
               </button>
             ) : (
-              <p className="mt-6 text-center text-sm text-slate-600">Bạn đã hoàn thành tất cả câu hỏi.</p>
+              <p className={`mt-6 text-center text-slate-600 ${isFullscreen ? "text-lg" : "text-sm"}`}>
+                Bạn đã hoàn thành tất cả câu hỏi.
+              </p>
             )}
           </div>
         ) : null}
