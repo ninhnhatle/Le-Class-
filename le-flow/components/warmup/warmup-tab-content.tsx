@@ -20,7 +20,7 @@ export function WarmupTabContent() {
     loadStepSettingsLocal(STEP_IDS.warmup, {
       defaults: DEFAULT_SPIN_NUMBER_SETTINGS,
       sanitize: sanitizeSpinNumberSettings,
-    }),
+    } as any),
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [gameResetKey, setGameResetKey] = useState(0);
