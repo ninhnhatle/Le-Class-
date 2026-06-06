@@ -73,5 +73,5 @@ export function sanitizePracticeSettings(input: Partial<PracticeSettings> | null
     requiredAttemptToUnlock,
     questions: questions.length > 0 ? questions : DEFAULT_PRACTICE_QUESTIONS,
     prizeOptions: prizeOptions.length >= 2 ? prizeOptions : DEFAULT_PRIZE_OPTIONS,
-  };
+  } as any;
 }
