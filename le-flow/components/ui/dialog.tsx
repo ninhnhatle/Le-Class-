@@ -10,20 +10,48 @@ type DialogProps = {
   description?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Portal target — use fullscreen container so dialog appears above fullscreen content. */
+  portalContainer?: HTMLElement | null;
+  /** Prevent closing when clicking the overlay. */
+  preventOutsideClose?: boolean;
+  size?: "md" | "lg" | "xl" | "2xl";
 };
 
-export function Dialog({ open, onClose, title, description, children, footer }: DialogProps) {
+const SIZE_CLASS: Record<NonNullable<DialogProps["size"]>, string> = {
+  md: "max-w-md max-h-[min(90vh,720px)]",
+  lg: "max-w-3xl max-h-[min(92vh,860px)]",
+  xl: "max-w-5xl max-h-[min(95vh,960px)]",
+  "2xl": "h-[min(98vh,1080px)] max-h-[min(98vh,1080px)] w-[calc(100%-1rem)] max-w-7xl",
+};
+
+export function Dialog({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  portalContainer,
+  preventOutsideClose = false,
+  size = "md",
+}: DialogProps) {
   const titleId = useId();
   const descriptionId = useId();
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm" />
+      <DialogPrimitive.Portal container={portalContainer ?? undefined}>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-[2147483646] bg-slate-900/60 backdrop-blur-sm" />
         <DialogPrimitive.Content
           aria-labelledby={titleId}
           aria-describedby={description ? descriptionId : undefined}
-          className="fixed left-1/2 top-1/2 z-[101] flex max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 outline-none focus:outline-none"
+          onPointerDownOutside={(event) => {
+            if (preventOutsideClose) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (preventOutsideClose) event.preventDefault();
+          }}
+          className={`fixed left-1/2 top-1/2 z-[2147483647] flex w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 outline-none focus:outline-none ${SIZE_CLASS[size]}`}
         >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
             <div className="min-w-0 pr-2">

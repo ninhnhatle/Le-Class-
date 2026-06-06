@@ -6,6 +6,8 @@ import { assignSliceColors } from "./constants";
 type SpinWheelProps = {
   options: string[];
   className?: string;
+  onResult?: (result: string) => void;
+  hideInlineResult?: boolean;
 };
 
 const SPIN_DURATION_MS = 4200;
@@ -49,7 +51,7 @@ function computeTargetRotation(index: number, count: number, currentRotation: nu
   return currentRotation + MIN_FULL_SPINS * 360 + delta;
 }
 
-export function SpinWheel({ options, className = "" }: SpinWheelProps) {
+export function SpinWheel({ options, className = "", onResult, hideInlineResult = false }: SpinWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -75,9 +77,11 @@ export function SpinWheel({ options, className = "" }: SpinWheelProps) {
 
     window.setTimeout(() => {
       setSpinning(false);
-      setResult(validOptions[winnerIndex]);
+      const winner = validOptions[winnerIndex];
+      setResult(winner);
+      onResult?.(winner);
     }, SPIN_DURATION_MS);
-  }, [spinning, validOptions, rotation]);
+  }, [spinning, validOptions, rotation, onResult]);
 
   if (validOptions.length === 0) {
     return (
@@ -146,7 +150,7 @@ export function SpinWheel({ options, className = "" }: SpinWheelProps) {
         {spinning ? "Đang quay..." : "Quay ngẫu nhiên"}
       </button>
 
-      {result ? (
+      {result && !hideInlineResult ? (
         <div
           className="w-full max-w-sm rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center"
           role="status"

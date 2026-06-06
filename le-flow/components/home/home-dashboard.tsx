@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { KnowledgeTabContent } from "@/components/interactive-video/knowledge-tab-content";
+import { PracticeTabContent } from "@/components/practice/practice-tab-content";
 import { WarmupTabContent } from "@/components/warmup/warmup-tab-content";
 
 type TabId = "warmup" | "knowledge" | "practice" | "application";
@@ -58,28 +59,7 @@ function TabPanel({ id }: { id: TabId }) {
   const panels: Record<TabId, React.ReactNode> = {
     warmup: <WarmupTabContent />,
     knowledge: <KnowledgeTabContent />,
-    practice: (
-      <div className="space-y-6">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Cấu trúc luyện tập</h3>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {[
-              { title: "Cá nhân", detail: "Bài tập viết / chọn đáp án" },
-              { title: "Cặp đôi", detail: "Hỏi — đáp theo mẫu câu" },
-              { title: "Nhóm nhỏ", detail: "Hoàn thành nhiệm vụ chung" },
-            ].map((c) => (
-              <div key={c.title} className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-                <p className="text-sm font-semibold text-slate-900">{c.title}</p>
-                <p className="mt-1 text-xs text-slate-600">{c.detail}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <p className="text-sm text-slate-600 leading-relaxed">
-          Luân phiên độ khó: từ nhận diện mẫu → sản xuất ngôn ngữ đơn giản → mở rộng ngữ cảnh.
-        </p>
-      </div>
-    ),
+    practice: <PracticeTabContent />,
     application: (
       <div className="space-y-6">
         <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/90 to-teal-50/50 p-6 shadow-sm">
