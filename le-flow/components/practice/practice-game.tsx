@@ -24,7 +24,7 @@ export function PracticeGame() {
     loadStepSettingsLocal(STEP_IDS.practice, {
       defaults: DEFAULT_PRACTICE_SETTINGS,
       sanitize: sanitizePracticeSettings,
-    }),
+    }as any),
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
