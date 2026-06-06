@@ -13,19 +13,10 @@ import {
 import type { PracticeSettings } from "@/lib/practice/types";
 import { checkPracticeAnswer, getRequiredAttempt, sanitizePracticeSettings } from "@/lib/practice/utils";
 import { STEP_IDS } from "@/lib/step-settings/keys";
-import {
-  loadStepSettingsLocal,
-  loadStepSettingsRemote,
-  persistStepSettingsRemote,
-} from "@/lib/step-settings/storage";
+import { loadStepSettingsRemote, persistStepSettingsRemote } from "@/lib/step-settings/storage";
 
 export function PracticeGame() {
-  const [settings, setSettings] = useState<PracticeSettings>(() =>
-    loadStepSettingsLocal(STEP_IDS.practice, {
-      defaults: DEFAULT_PRACTICE_SETTINGS,
-      sanitize: sanitizePracticeSettings,
-    }as any),
-  );
+  const [settings, setSettings] = useState<PracticeSettings>(DEFAULT_PRACTICE_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessionKey, setSessionKey] = useState(0);
 
@@ -46,7 +37,7 @@ export function PracticeGame() {
 
   useEffect(() => {
     void loadStepSettingsRemote(STEP_IDS.practice).then(({ settings: remote }) => {
-      setSettings(remote);
+      setSettings(sanitizePracticeSettings(remote));
     });
   }, []);
 

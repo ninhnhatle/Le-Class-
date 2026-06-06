@@ -1,7 +1,4 @@
 import type { VideoQuestion } from "@/lib/interactive-video/types";
-import { getStepSettingsKey, STEP_IDS } from "@/lib/step-settings/keys";
-
-export const KNOWLEDGE_SETTINGS_STORAGE_KEY = getStepSettingsKey(STEP_IDS.knowledge);
 
 /** Bundled sample video served from `public/assets/`. */
 export const KNOWLEDGE_SAMPLE_VIDEO_PATH = "/assets/knowledge-sample.mp4";

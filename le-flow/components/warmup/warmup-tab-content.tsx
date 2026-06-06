@@ -9,25 +9,16 @@ import {
 import { SpinNumberGame } from "@/components/spin-number/spin-number-game";
 import { SpinNumberSettingsDialog } from "@/components/spin-number/spin-number-settings-dialog";
 import { STEP_IDS } from "@/lib/step-settings/keys";
-import {
-  loadStepSettingsLocal,
-  loadStepSettingsRemote,
-  persistStepSettingsRemote,
-} from "@/lib/step-settings/storage";
+import { loadStepSettingsRemote, persistStepSettingsRemote } from "@/lib/step-settings/storage";
 
 export function WarmupTabContent() {
-  const [settings, setSettings] = useState<SpinNumberSettings>(() =>
-    loadStepSettingsLocal(STEP_IDS.warmup, {
-      defaults: DEFAULT_SPIN_NUMBER_SETTINGS,
-      sanitize: sanitizeSpinNumberSettings,
-    } as any),
-  );
+  const [settings, setSettings] = useState<SpinNumberSettings>(DEFAULT_SPIN_NUMBER_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [gameResetKey, setGameResetKey] = useState(0);
 
   useEffect(() => {
     void loadStepSettingsRemote(STEP_IDS.warmup).then(({ settings: remote }) => {
-      setSettings(remote);
+      setSettings(sanitizeSpinNumberSettings(remote));
     });
   }, []);
 

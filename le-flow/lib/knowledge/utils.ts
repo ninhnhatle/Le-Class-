@@ -1,11 +1,5 @@
 import type { QuestionType, VideoQuestion } from "@/lib/interactive-video/types";
 import { sortQuestionsByTime } from "@/lib/interactive-video/utils";
-import { STEP_IDS } from "@/lib/step-settings/keys";
-import {
-  loadStepSettingsLocal,
-  persistStepSettingsRemote,
-  saveStepSettingsLocal,
-} from "@/lib/step-settings/storage";
 import {
   DEFAULT_KNOWLEDGE_SETTINGS,
   KNOWLEDGE_SAMPLE_VIDEO_NAME,
@@ -54,16 +48,4 @@ export function sanitizeKnowledgeSettings(input: unknown): KnowledgeSettings {
       : KNOWLEDGE_SAMPLE_VIDEO_NAME;
 
   return { videoSource, videoName, questions };
-}
-
-export function loadStoredKnowledgeSettings(): KnowledgeSettings {
-  return loadStepSettingsLocal(STEP_IDS.knowledge, {
-    defaults: DEFAULT_KNOWLEDGE_SETTINGS,
-    sanitize: sanitizeKnowledgeSettings,
-  });
-}
-
-export function saveStoredKnowledgeSettings(settings: KnowledgeSettings): void {
-  saveStepSettingsLocal(STEP_IDS.knowledge, settings);
-  void persistStepSettingsRemote(STEP_IDS.knowledge, settings);
 }

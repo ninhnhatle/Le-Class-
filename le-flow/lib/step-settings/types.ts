@@ -1,6 +1,6 @@
 import type { StepId } from "./keys";
 
-export type StepSettingsSource = "google_sheet" | "defaults" | "local_cache";
+export type StepSettingsSource = "google_sheet" | "defaults";
 
 export type StepSettingsApiResponse<T> = {
   ok: boolean;
