@@ -5,6 +5,21 @@ import { NextQuestionIndicator } from "./next-question-indicator";
 import { QuestionOverlay } from "./question-overlay";
 import { VideoTimeline } from "./video-timeline";
 import {
+  KNOWLEDGE_SAMPLE_VIDEO_NAME,
+  KNOWLEDGE_SAMPLE_VIDEO_PATH,
+  type KnowledgeVideoSource,
+} from "@/lib/knowledge/constants";
+import {
+  deleteCustomKnowledgeVideo,
+  loadCustomKnowledgeVideo,
+  saveCustomKnowledgeVideo,
+} from "@/lib/knowledge/video-blob-store";
+import { STEP_IDS } from "@/lib/step-settings/keys";
+import {
+  loadStepSettingsRemote,
+  persistStepSettingsRemote,
+} from "@/lib/step-settings/storage";
+import {
   QUESTION_TYPE_LABELS,
   type QuestionType,
   type VideoQuestion,
@@ -22,26 +37,104 @@ type GameMode = "edit" | "play";
 
 export function InteractiveVideoGame() {
   const [mode, setMode] = useState<GameMode>("edit");
+  const [initialized, setInitialized] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoName, setVideoName] = useState<string>("");
+  const [videoSource, setVideoSource] = useState<KnowledgeVideoSource>("sample");
   const [questions, setQuestions] = useState<VideoQuestion[]>([]);
   const [editingTime, setEditingTime] = useState<Record<string, string>>({});
   const [highlightedQuestionId, setHighlightedQuestionId] = useState<string | null>(null);
 
-  const revokeUrl = useCallback((url: string | null) => {
-    if (url) URL.revokeObjectURL(url);
+  const blobUrlRef = useRef<string | null>(null);
+
+  const revokeBlobUrl = useCallback(() => {
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
-    return () => revokeUrl(videoUrl);
-  }, [videoUrl, revokeUrl]);
+    let cancelled = false;
 
-  const handleVideoUpload = (file: File | undefined) => {
+    async function initFromStorage() {
+      const { settings: stored } = await loadStepSettingsRemote(STEP_IDS.knowledge);
+      if (cancelled) return;
+
+      setQuestions(stored.questions);
+      setVideoSource(stored.videoSource);
+      setVideoName(stored.videoName);
+      setEditingTime(
+        Object.fromEntries(stored.questions.map((q) => [q.id, formatTime(q.timeSeconds)])),
+      );
+
+      if (stored.videoSource === "custom") {
+        const blob = await loadCustomKnowledgeVideo();
+        if (cancelled) return;
+
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          blobUrlRef.current = url;
+          setVideoUrl(url);
+        } else {
+          setVideoUrl(KNOWLEDGE_SAMPLE_VIDEO_PATH);
+          setVideoSource("sample");
+          setVideoName(KNOWLEDGE_SAMPLE_VIDEO_NAME);
+        }
+      } else {
+        setVideoUrl(KNOWLEDGE_SAMPLE_VIDEO_PATH);
+      }
+
+      setInitialized(true);
+    }
+
+    void initFromStorage();
+
+    return () => {
+      cancelled = true;
+      revokeBlobUrl();
+    };
+  }, [revokeBlobUrl]);
+
+  useEffect(() => {
+    if (!initialized) return;
+
+    const timer = window.setTimeout(() => {
+      void persistStepSettingsRemote(STEP_IDS.knowledge, { videoSource, videoName, questions });
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [initialized, videoSource, videoName, questions]);
+
+  const handleVideoUpload = async (file: File | undefined) => {
     if (!file || !file.type.startsWith("video/")) return;
-    revokeUrl(videoUrl);
+
+    revokeBlobUrl();
+    await saveCustomKnowledgeVideo(file);
+
     const url = URL.createObjectURL(file);
+    blobUrlRef.current = url;
     setVideoUrl(url);
     setVideoName(file.name);
+    setVideoSource("custom");
+    void persistStepSettingsRemote(STEP_IDS.knowledge, {
+      videoSource: "custom",
+      videoName: file.name,
+      questions,
+    });
+  };
+
+  const handleResetToSampleVideo = async () => {
+    revokeBlobUrl();
+    await deleteCustomKnowledgeVideo();
+    setVideoUrl(KNOWLEDGE_SAMPLE_VIDEO_PATH);
+    setVideoName(KNOWLEDGE_SAMPLE_VIDEO_NAME);
+    setVideoSource("sample");
+    void persistStepSettingsRemote(STEP_IDS.knowledge, {
+      videoSource: "sample",
+      videoName: KNOWLEDGE_SAMPLE_VIDEO_NAME,
+      questions,
+    });
   };
 
   const addQuestionAtTime = (timeSeconds: number) => {
@@ -75,6 +168,14 @@ export function InteractiveVideoGame() {
   const sortedQuestions = useMemo(() => sortQuestionsByTime(questions), [questions]);
 
   const canPlay = Boolean(videoUrl);
+
+  if (!initialized) {
+    return (
+      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+        Đang tải video và cài đặt đã lưu…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -112,14 +213,11 @@ export function InteractiveVideoGame() {
         <EditorPanel
           videoUrl={videoUrl}
           videoName={videoName}
+          videoSource={videoSource}
           questions={sortedQuestions}
           editingTime={editingTime}
           onUpload={handleVideoUpload}
-          onClearVideo={() => {
-            revokeUrl(videoUrl);
-            setVideoUrl(null);
-            setVideoName("");
-          }}
+          onResetToSampleVideo={handleResetToSampleVideo}
           highlightedQuestionId={highlightedQuestionId}
           onAddQuestionAtTime={addQuestionAtTime}
           onHighlightQuestion={setHighlightedQuestionId}
@@ -141,11 +239,12 @@ export function InteractiveVideoGame() {
 type EditorPanelProps = {
   videoUrl: string | null;
   videoName: string;
+  videoSource: KnowledgeVideoSource;
   questions: VideoQuestion[];
   editingTime: Record<string, string>;
   highlightedQuestionId: string | null;
   onUpload: (file: File | undefined) => void;
-  onClearVideo: () => void;
+  onResetToSampleVideo: () => void;
   onAddQuestionAtTime: (timeSeconds: number) => void;
   onHighlightQuestion: (id: string | null) => void;
   onUpdateQuestion: (id: string, patch: Partial<VideoQuestion>) => void;
@@ -158,11 +257,12 @@ type EditorPanelProps = {
 function EditorPanel({
   videoUrl,
   videoName,
+  videoSource,
   questions,
   editingTime,
   highlightedQuestionId,
   onUpload,
-  onClearVideo,
+  onResetToSampleVideo,
   onAddQuestionAtTime,
   onHighlightQuestion,
   onUpdateQuestion,
@@ -203,9 +303,18 @@ function EditorPanel({
           {videoName ? (
             <>
               <span className="max-w-[14rem] truncate text-sm text-slate-600 sm:max-w-xs">{videoName}</span>
-              <button type="button" onClick={onClearVideo} className="text-sm font-medium text-rose-600 hover:text-rose-800">
-                Xóa video
-              </button>
+              {videoSource === "sample" ? (
+                <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-800">Video mẫu</span>
+              ) : null}
+              {videoSource === "custom" ? (
+                <button
+                  type="button"
+                  onClick={onResetToSampleVideo}
+                  className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                >
+                  Dùng video mẫu
+                </button>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -631,13 +740,15 @@ function VideoPlayer({ videoUrl, questions }: VideoPlayerProps) {
             onEnded={handleEnded}
           />
         </div>
-        {!activeQuestion && !completed ? (
-          <NextQuestionIndicator
-            nextQuestion={nextQuestion}
-            currentTime={currentTime}
-            position="top-right"
-          />
-        ) : null}
+        <div className="video-player-overlays pointer-events-none absolute inset-0 z-20">
+          {!activeQuestion && !completed ? (
+            <NextQuestionIndicator
+              nextQuestion={nextQuestion}
+              currentTime={currentTime}
+              position={isFullscreen ? "bottom-left" : "top-right"}
+            />
+          ) : null}
+        </div>
         {activeQuestion ? (
           <QuestionOverlay
             key={activeQuestion.id}

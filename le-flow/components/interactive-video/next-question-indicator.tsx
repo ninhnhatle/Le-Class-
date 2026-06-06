@@ -24,11 +24,14 @@ export function NextQuestionIndicator({
   const seconds = secondsUntilQuestion(currentTime, nextQuestion.timeSeconds);
   if (seconds <= 0) return null;
 
-  const positionClass = position === "bottom-left" ? "bottom-3 left-3" : "top-3 right-3";
+  const positionClass =
+    position === "bottom-left"
+      ? "bottom-4 left-4 sm:bottom-6 sm:left-6"
+      : "top-4 right-4 sm:top-6 sm:right-6";
 
   return (
     <p
-      className={`next-question-indicator-layer pointer-events-none absolute z-40 ${positionClass} rounded-md bg-slate-950/75 px-2 py-1 text-[11px] font-medium tabular-nums text-white/90 backdrop-blur-sm`}
+      className={`next-question-indicator-layer pointer-events-none absolute z-[60] ${positionClass} rounded-lg bg-slate-950/85 px-3 py-1.5 text-xs font-semibold tabular-nums text-white shadow-lg backdrop-blur-sm`}
       aria-live="polite"
     >
       Câu hỏi sau {seconds} giây
