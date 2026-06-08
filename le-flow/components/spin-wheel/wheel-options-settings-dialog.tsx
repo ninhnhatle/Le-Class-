@@ -165,7 +165,7 @@ export function WheelOptionsSettingsDialog({
           </li>
         ) : (
           draft.map((option, index) => (
-            <li key={`${index}-${option}`} className="flex gap-2">
+            <li key={index} className="flex gap-2">
               <input
                 type="text"
                 value={option}

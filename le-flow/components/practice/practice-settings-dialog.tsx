@@ -323,7 +323,7 @@ function WheelSettingsPanel({
         </div>
         <ul className="space-y-2.5">
           {draft.prizeOptions.map((prize, index) => (
-            <li key={`${index}-${prize}`} className="flex gap-2">
+            <li key={index} className="flex gap-2">
               <input
                 type="text"
                 value={prize}
