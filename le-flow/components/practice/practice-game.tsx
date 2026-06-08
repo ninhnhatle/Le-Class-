@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AnimatedGameBackground } from "@/components/ui/animated-game-background";
 import { GameCornerControls } from "@/components/ui/game-corner-controls";
 import { Dialog } from "@/components/ui/dialog";
 import { RichTextContent } from "@/components/ui/rich-text-content";
@@ -76,6 +77,22 @@ export function PracticeGame() {
     resetQuestionState();
   };
 
+  const resetSession = useCallback(() => {
+    setPrizeResult(null);
+    setShowRewardWheel(false);
+    setQuestionIndex(0);
+    setSelectedIndex(null);
+    setTrueFalseChoice(null);
+    setFreeText("");
+    setWrongMessage(null);
+    setSuccessMessage(null);
+    setShowExplanation(false);
+    setAttemptCount(0);
+    setUnlockedWheel(false);
+    setAnsweredLocked(false);
+    setSessionKey((prev) => prev + 1);
+  }, []);
+
   const saveSettings = (nextSettings: PracticeSettings) => {
     setSettings(nextSettings);
     void persistStepSettingsRemote(STEP_IDS.practice, nextSettings);
@@ -117,7 +134,7 @@ export function PracticeGame() {
     const isCorrect = checkPracticeAnswer(question, answer);
 
     if (!isCorrect) {
-      setShowExplanation(true);
+      setShowExplanation(false);
       if (settings.allowMultipleAttempts) {
         setWrongMessage(`Chưa đúng. Lần thử ${nextAttempt}. Hãy thử lại!`);
         return;
@@ -195,16 +212,19 @@ export function PracticeGame() {
         key={sessionKey}
         className={`relative space-y-6 rounded-3xl ${
           isFullscreen
-            ? `flex h-full min-h-screen flex-col bg-gradient-to-br from-violet-950 via-violet-900 to-fuchsia-950 p-6 sm:p-10 lg:p-14 ${
+            ? `flex h-full min-h-screen flex-col overflow-hidden p-6 sm:p-10 lg:p-14 ${
                 showRewardWheel ? "items-center justify-center" : "justify-center"
               }`
             : "pt-12"
         }`}
       >
+        {isFullscreen ? <AnimatedGameBackground /> : null}
+
         <GameCornerControls
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
           onOpenSettings={() => setSettingsOpen(true)}
+          onReset={resetSession}
           showSettings={!isFullscreen}
         />
 
@@ -235,13 +255,13 @@ export function PracticeGame() {
             </div>
           </div>
         ) : showQuestionPanel ? (
-          <div className="mx-auto w-full max-w-5xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-2 text-base font-semibold text-violet-100 backdrop-blur-sm sm:text-lg">
+          <div className="relative z-[1] mx-auto w-full max-w-5xl text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/70 px-5 py-2 text-sm font-semibold text-violet-800 shadow-sm backdrop-blur-sm sm:text-base">
               Câu {questionIndex + 1} / {questions.length}
             </span>
-            <div className="mx-auto mt-4 h-2 max-w-md overflow-hidden rounded-full bg-white/15">
+            <div className="mx-auto mt-4 h-2.5 max-w-md overflow-hidden rounded-full bg-white/50 shadow-inner">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-violet-300 to-fuchsia-300 transition-all duration-500"
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -250,9 +270,9 @@ export function PracticeGame() {
 
         {showQuestionPanel ? (
         <div
-          className={`mx-auto w-full border shadow-xl ${
+          className={`relative z-[1] mx-auto w-full border shadow-xl ${
             isFullscreen
-              ? "max-w-5xl rounded-3xl border-white/10 bg-white p-8 sm:p-10 lg:p-14"
+              ? "max-w-5xl rounded-3xl border-white/70 bg-white/95 p-8 shadow-2xl shadow-violet-200/40 backdrop-blur-sm sm:p-10 lg:p-14"
               : "rounded-2xl border-violet-100/80 bg-white p-6 shadow-md ring-1 ring-violet-50"
           }`}
         >
@@ -293,7 +313,7 @@ export function PracticeGame() {
                     >
                       <span
                         className={`flex shrink-0 items-center justify-center rounded-xl font-bold ${
-                          isFullscreen ? "size-12 text-lg sm:size-14 sm:text-xl" : "size-8 text-sm"
+                          isFullscreen ? "size-10 text-base sm:size-12 sm:text-lg" : "size-8 text-sm"
                         } ${
                           selectedIndex === i
                             ? "bg-violet-600 text-white"
@@ -313,7 +333,7 @@ export function PracticeGame() {
                           setWrongMessage(null);
                         }}
                       />
-                      <span className={isFullscreen ? "text-lg font-medium text-slate-800 sm:text-xl lg:text-2xl" : "text-sm text-slate-800"}>
+                      <span className={isFullscreen ? "text-base font-medium text-slate-800 sm:text-lg lg:text-xl" : "text-sm text-slate-800"}>
                         {opt}
                       </span>
                     </label>
@@ -337,7 +357,7 @@ export function PracticeGame() {
                       setWrongMessage(null);
                     }}
                     className={`rounded-2xl border font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                      isFullscreen ? "px-8 py-6 text-2xl sm:text-3xl" : "px-4 py-3 text-sm"
+                      isFullscreen ? "px-8 py-5 text-xl sm:text-2xl" : "px-4 py-3 text-sm"
                     } ${
                       trueFalseChoice === value
                         ? "border-violet-400 bg-violet-50 text-violet-900 ring-2 ring-violet-200"
@@ -361,7 +381,7 @@ export function PracticeGame() {
                 }}
                 placeholder="Nhập câu trả lời của bạn..."
                 className={`w-full rounded-2xl border border-slate-200 bg-white text-slate-900 outline-none ring-violet-200 focus:border-violet-400 focus:ring-2 disabled:bg-slate-50 ${
-                  isFullscreen ? "px-6 py-5 text-xl sm:text-2xl lg:text-3xl" : "px-4 py-3 text-sm"
+                  isFullscreen ? "px-6 py-4 text-lg sm:text-xl lg:text-2xl" : "px-4 py-3 text-sm"
                 }`}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !answeredLocked && !unlockedWheel) submit();
@@ -373,23 +393,14 @@ export function PracticeGame() {
 
           {wrongMessage ? (
             <p
-              className={`mt-4 font-semibold text-rose-600 ${isFullscreen ? "text-lg sm:text-xl" : "text-sm"}`}
+              className={`mt-4 font-semibold text-rose-600 ${isFullscreen ? "text-base sm:text-lg" : "text-sm"}`}
               role="alert"
             >
               {wrongMessage}
             </p>
           ) : null}
 
-          {successMessage ? (
-            <p
-              className={`mt-4 font-semibold text-emerald-700 ${isFullscreen ? "text-lg sm:text-xl" : "text-sm"}`}
-              role="status"
-            >
-              {successMessage}
-            </p>
-          ) : null}
-
-          {showExplanation && question.explanationHtml.trim() && !hideAnswersForRewardPrompt ? (
+          {showExplanation && question.explanationHtml.trim() ? (
             <div
               className={`mt-5 rounded-2xl border border-sky-100 bg-sky-50/80 ${
                 isFullscreen ? "px-6 py-5 sm:px-8 sm:py-6" : "px-4 py-3"
@@ -400,9 +411,22 @@ export function PracticeGame() {
               </p>
               <RichTextContent
                 html={question.explanationHtml}
-                className={isFullscreen ? "mt-3 text-base sm:text-lg [&_p]:leading-relaxed" : "mt-2"}
+                className={
+                  isFullscreen
+                    ? "mt-3 text-base sm:text-lg [&_p]:leading-relaxed"
+                    : "mt-2 text-sm"
+                }
               />
             </div>
+          ) : null}
+
+          {successMessage ? (
+            <p
+              className={`mt-4 font-semibold text-emerald-700 ${isFullscreen ? "text-base sm:text-lg" : "text-sm"}`}
+              role="status"
+            >
+              {successMessage}
+            </p>
           ) : null}
 
           {!answeredLocked && !unlockedWheel ? (
@@ -410,7 +434,7 @@ export function PracticeGame() {
               type="button"
               onClick={submit}
               className={`mt-6 w-full rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 font-bold text-white shadow-lg shadow-violet-500/25 transition hover:from-violet-700 hover:to-fuchsia-700 ${
-                isFullscreen ? "py-5 text-xl sm:text-2xl" : "py-3 text-sm"
+                isFullscreen ? "py-4 text-lg sm:text-xl" : "py-3 text-sm"
               }`}
             >
               Kiểm tra đáp án
@@ -421,7 +445,7 @@ export function PracticeGame() {
             <button
               type="button"
               onClick={() => setShowRewardWheel(true)}
-              className="mt-6 w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-5 text-xl font-bold text-white shadow-lg shadow-amber-500/30 transition hover:from-amber-600 hover:to-orange-600 sm:text-2xl"
+              className="mt-6 w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-4 text-lg font-bold text-white shadow-lg shadow-amber-500/30 transition hover:from-amber-600 hover:to-orange-600 sm:text-xl"
             >
               Nhận thưởng
             </button>
@@ -431,17 +455,17 @@ export function PracticeGame() {
 
         {showWheelPanel ? (
           <div
-            className={`mx-auto w-full border shadow-xl ${
+            className={`relative z-[1] mx-auto w-full border shadow-xl ${
               isFullscreen
-                ? "flex max-w-5xl flex-1 flex-col items-center justify-center rounded-3xl border-white/10 bg-white/95 p-6 sm:p-8"
+                ? "flex max-w-5xl flex-1 flex-col items-center justify-center rounded-3xl border-white/70 bg-white/95 p-6 shadow-2xl shadow-violet-200/40 backdrop-blur-sm sm:p-8"
                 : "rounded-2xl border-violet-200/80 bg-gradient-to-br from-violet-50/90 to-fuchsia-50/40 p-6 shadow-sm"
             }`}
           >
             <div className={`mb-6 text-center ${isFullscreen ? "sm:mb-4" : "sm:text-left"}`}>
-              <h3 className={`font-bold text-slate-900 ${isFullscreen ? "text-2xl sm:text-3xl" : "text-base"}`}>
+              <h3 className={`font-bold text-slate-900 ${isFullscreen ? "text-xl sm:text-2xl" : "text-base"}`}>
                 Vòng quay phần quà
               </h3>
-              <p className={`mt-1 text-slate-600 ${isFullscreen ? "text-base sm:text-lg" : "text-sm"}`}>
+              <p className={`mt-1 text-slate-600 ${isFullscreen ? "text-sm sm:text-base" : "text-sm"}`}>
                 Quay để nhận phần thưởng cho câu trả lời đúng.
               </p>
             </div>
@@ -457,13 +481,13 @@ export function PracticeGame() {
                 type="button"
                 onClick={goToNextQuestion}
                 className={`mt-6 w-full rounded-2xl border border-slate-200 bg-white font-semibold text-slate-700 transition hover:bg-slate-50 ${
-                  isFullscreen ? "py-4 text-lg" : "py-3 text-sm"
+                  isFullscreen ? "py-3 text-base" : "py-3 text-sm"
                 }`}
               >
                 Câu hỏi tiếp theo
               </button>
             ) : (
-              <p className={`mt-6 text-center text-slate-600 ${isFullscreen ? "text-lg" : "text-sm"}`}>
+              <p className={`mt-6 text-center text-slate-600 ${isFullscreen ? "text-base" : "text-sm"}`}>
                 Bạn đã hoàn thành tất cả câu hỏi.
               </p>
             )}

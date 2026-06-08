@@ -75,3 +75,121 @@ body {
   position: absolute;
   z-index: 60;
 }
+
+/* Practice game — bright animated fullscreen background */
+.practice-animated-bg-base {
+  background: linear-gradient(
+    135deg,
+    #e0f2fe 0%,
+    #ede9fe 35%,
+    #fce7f3 65%,
+    #fef3c7 100%
+  );
+  background-size: 200% 200%;
+  animation: practice-bg-gradient-shift 12s ease infinite;
+}
+
+.practice-animated-bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(72px);
+  opacity: 0.65;
+  will-change: transform;
+}
+
+.practice-animated-bg-blob-1 {
+  top: -8%;
+  left: -6%;
+  width: 42%;
+  height: 42%;
+  background: radial-gradient(circle, #a78bfa 0%, transparent 70%);
+  animation: practice-bg-float-1 18s ease-in-out infinite;
+}
+
+.practice-animated-bg-blob-2 {
+  right: -8%;
+  bottom: -10%;
+  width: 48%;
+  height: 48%;
+  background: radial-gradient(circle, #38bdf8 0%, transparent 70%);
+  animation: practice-bg-float-2 22s ease-in-out infinite;
+}
+
+.practice-animated-bg-blob-3 {
+  top: 38%;
+  left: 32%;
+  width: 36%;
+  height: 36%;
+  background: radial-gradient(circle, #f472b6 0%, transparent 70%);
+  animation: practice-bg-float-3 16s ease-in-out infinite;
+}
+
+.practice-animated-bg-shimmer {
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: practice-bg-shimmer 8s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+}
+
+@keyframes practice-bg-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes practice-bg-float-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(12%, 8%) scale(1.08);
+  }
+  66% {
+    transform: translate(6%, 14%) scale(0.95);
+  }
+}
+
+@keyframes practice-bg-float-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(-10%, -12%) scale(1.1);
+  }
+  70% {
+    transform: translate(-6%, -6%) scale(0.92);
+  }
+}
+
+@keyframes practice-bg-float-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-14%, 10%) scale(1.12);
+  }
+}
+
+@keyframes practice-bg-shimmer {
+  0%,
+  100% {
+    background-position: 200% 0;
+    opacity: 0.35;
+  }
+  50% {
+    background-position: -200% 0;
+    opacity: 0.55;
+  }
+}

@@ -110,6 +110,14 @@ export function SpinNumberGame({ settings, onOpenSettings }: SpinNumberGameProps
     setResult(null);
   }, []);
 
+  const resetGame = useCallback(() => {
+    stopSpin();
+    setSpinning(false);
+    setResult(null);
+    setShowResultDialog(false);
+    setCurrentValue("?");
+  }, [stopSpin]);
+
   const toggleFullscreen = useCallback(async () => {
     if (!containerRef.current) return;
 
@@ -155,6 +163,7 @@ export function SpinNumberGame({ settings, onOpenSettings }: SpinNumberGameProps
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
         onOpenSettings={onOpenSettings}
+        onReset={resetGame}
         showSettings={!isFullscreen && Boolean(onOpenSettings)}
       />
 

@@ -14,7 +14,6 @@ import { loadStepSettingsRemote, persistStepSettingsRemote } from "@/lib/step-se
 export function WarmupTabContent() {
   const [settings, setSettings] = useState<SpinNumberSettings>(DEFAULT_SPIN_NUMBER_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [gameResetKey, setGameResetKey] = useState(0);
 
   useEffect(() => {
     void loadStepSettingsRemote(STEP_IDS.warmup).then(({ settings: remote }) => {
@@ -25,7 +24,6 @@ export function WarmupTabContent() {
   const saveSettings = (nextSettings: SpinNumberSettings) => {
     setSettings(nextSettings);
     void persistStepSettingsRemote(STEP_IDS.warmup, nextSettings);
-    setGameResetKey((prev) => prev + 1);
     setSettingsOpen(false);
   };
 
@@ -67,7 +65,6 @@ export function WarmupTabContent() {
         </div>
 
         <SpinNumberGame
-          key={gameResetKey}
           settings={settings}
           onOpenSettings={() => setSettingsOpen(true)}
         />
